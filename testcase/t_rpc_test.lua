@@ -17,12 +17,12 @@
 ---------------------------------------------------------------
 
 -- Promise = require('Promise')
-Promise = dofile('../Promise.lua')
+Promise = dofile('Promise.lua')
 sleep = function(n) os.execute("sleep " .. n) end
 
 local co_remote
-A = function() return 10 end
-B = function(a)
+return10 = function() return 10 end
+returnDoubled = function(a)
 	return Promise.new(function(...)
 		-- start coroutine and wait
 		co_remote = coroutine.create(function(y, n)
@@ -32,32 +32,32 @@ B = function(a)
 		coroutine.resume(co_remote, ...)
 	end)
 end
-C = function(a)
+printX4 = function(a)
 	print(a * 4)
 	return Promise.resolve('ok')
 end
-D = function(a) print(a * 3) end
-E = function(result)
-	local b, c, d = unpack(result)
+printX3 = function(a) print(a * 3) end
+unpackAndReject = function(...)
+	local b, c, d = ...
 	print(b, c, d)
 	return Promise.reject('FIRE')
 end
 
 -- promise_A = Promise.resolve(A())
-promise_A = Promise.new(function(resolve, reject)
-	local ok, result = pcall(A)
+promise_r10 = Promise.new(function(resolve, reject)
+	local ok, result = pcall(return10)
 	return (ok and resolve or reject)(result)
 end)
 
 local err = function(r) print("catch:", r) end
 local log = function(r) print("andThen:", r); return r end
-promise_B = promise_A:andThen(B):catch(err):andThen(log)
-promise_C = promise_A:andThen(C)
-promise_D = promise_A:andThen(D)
+promise_B = promise_r10:andThen(returnDoubled):catch(err):andThen(log)
+promise_C = promise_r10:andThen(printX4)
+promise_D = promise_r10:andThen(printX3)
 
 promises = {promise_B, promise_C, promise_D}
 Promise.all(promises)
-	:andThen(E)
+	:andThen(unpackAndReject)
 	:catch(function(reson)
 		print(reson)
 	end)

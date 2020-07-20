@@ -16,20 +16,25 @@
 --	promise:andThen(onFulfilled1):andThen(onFulfilled2, onRejected2)
 --
 -- History:
---	2015.10.29	release v1.1, fix some bugs and update testcases
---	2015.08.10	release v1.0.1, full testcases, minor fix and publish on github
+--	2015.10.29	release v1.1, fix some bugs and update test cases
+--	2015.08.10	release v1.0.1, full test cases, minor fix and publish on github
 --	2015.03		release v1.0.0
 -----------------------------------------------------------------------------
 
-local Promise, promise = {}, {}
+local Promise = {}
+
+---@class Promise
+local promise = {}
 
 -- andThen replacer
 --  1) replace standard .then() when promised
 local PENDING = {}
 local nil_promise = {}
 
+
 local function promised(value, action)
 	local ok, result = pcall(action, value)
+	--print("Called handler with " .. tostring(value) .. " received " .. tostring(ok) .. " + " .. tostring(value))
 	return ok and Promise.resolve(result) or Promise.reject(result) -- .. '.\n' .. debug.traceback())
 end
 
@@ -45,7 +50,7 @@ local function promised_n(self, _, onRejected)
 	return onRejected and promised(self[1], onRejected) or self
 end
 
--- inext() list all elementys in array
+-- inext() list all elements in array
 --	*) next() will list all members for table without order
 --	*) @see iter(): http://www.lua.org/pil/7.3.html
 local function inext(a, i)
@@ -55,10 +60,11 @@ local function inext(a, i)
 end
 -- put resolved value to p[1], or push lazyed calls/object to p[]
 --	1) if resolved a no pending promise, direct call promise.andThen()
+---@param resolved Promise
 local function resolver(this, resolved, sure)
 	local typ = type(resolved)
 	if (typ == 'table' and resolved.andThen) then
-		local lazy = {this,
+		local lazy = --[[---@type Promise ]] {this,
 			function(value) return resolver(this, value, true) end,
 			function(reason) return resolver(this, reason, false) end}
 		if resolved[1] == PENDING then
@@ -119,12 +125,22 @@ setmetatable(nil_promise, promise)
 --	2) promise:catch(onRejected)
 ------------------------------------------------------------------------------------------
 
+-- Creates a new promise instance in the pending state
+-- from the fulfill and the reject functions.
+
+---@param onFulfilled function | nil
+---@param onRejected function | nil
+---@return Promise
 function promise:andThen(onFulfilled, onRejected)
-	local lazy = {{PENDING}, onFulfilled, onRejected}
-	table.insert(self, lazy)
+	local lazy = --[[---@type Promise ]] {{PENDING}, onFulfilled, onRejected}
+	table.insert(--[[---@type Promise[] ]] self, lazy)
 	return setmetatable(lazy[1], promise) -- <lazy[1]> is promise2
 end
 
+-- Creates a new promise instance in the pending state
+-- from just the reject function.
+---@param onRejected function
+---@return Promise
 function promise:catch(onRejected)
 	return self:andThen(nil, onRejected)
 end
